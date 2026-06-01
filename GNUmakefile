@@ -1,6 +1,6 @@
 default: fmt lint install generate
 
-all: automatic_generator generate_sdk fmt lint install generate set_tag
+all: generate_sdk automatic_generator fmt lint install generate set_tag
 
 generate_deploy: automatic_generator generate_sdk generate fmt lint release upload_registry clean celebrate
 
@@ -20,7 +20,7 @@ upload_registry:
 	curl -X POST -L ${TERRAFORM_REGISTRY_ENDPOINT} -H 'Content-Type: application/json' -d @registry-manifest.json
 
 automatic_generator:
-	go run github.com/marcom4rtinez/infrahub-terraform-provider-generator/cmd/generator@latest --artifacts
+	cd provider-generator && go run ./cmd/generator --artifacts -gql-dir ../gql -provider-dir ../internal/provider -sdk-dir ../sdk
 
 generate_sdk:
 	cd sdk; bash pull_schema.sh; go run github.com/Khan/genqlient
