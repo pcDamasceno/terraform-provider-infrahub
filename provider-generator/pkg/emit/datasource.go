@@ -10,6 +10,8 @@ import (
 
 	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/queryir"
 	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/sdkintrospect"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // modelType holds a pre-walked model struct type assigned to a List/Object/Union node.
@@ -85,7 +87,6 @@ func (e *emitter) assignModels(n *sdkintrospect.RNode, path string) {
 // ---------------------------------------------------------------------------
 
 func (e *emitter) renderHeader(b *bytes.Buffer) {
-	base := e.baseTitle()           // FirewallPolicyRules
 	baseLower := e.res.Query.BaseName // firewallPolicyRules
 	rootElem := e.modelName[e.res.Root]
 
@@ -108,8 +109,9 @@ func (e *emitter) renderHeader(b *bytes.Buffer) {
 	fmt.Fprintf(b, "\t_ datasource.DataSourceWithConfigure = &%s{}\n", dsType)
 	b.WriteString(")\n\n")
 
-	fmt.Fprintf(b, "// New%sDataSource is a helper function to simplify the provider implementation.\n", base)
-	fmt.Fprintf(b, "func New%sDataSource() datasource.DataSource {\n", base)
+	ctorBase := cases.Title(language.English).String(e.res.Query.BaseName)
+	fmt.Fprintf(b, "// New%sDataSource is a helper function to simplify the provider implementation.\n", ctorBase)
+	fmt.Fprintf(b, "func New%sDataSource() datasource.DataSource {\n", ctorBase)
 	fmt.Fprintf(b, "\treturn &%s{}\n}\n\n", dsType)
 
 	// Top data source struct.

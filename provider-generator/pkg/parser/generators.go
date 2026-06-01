@@ -6,6 +6,9 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/emit"
+	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/queryir"
+	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/sdkintrospect"
 	"github.com/marcom4rtinez/infrahub-terraform-provider-generator/pkg/templates"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -35,7 +38,7 @@ func ReadAndGenerateProvider(components TerraformComponents, providerDirectory s
 	fmt.Printf("Content written to provider.go file successfully!\n")
 }
 
-func ReadAndGenerateDataSourcesAndResources(graphqlQuery string, providerDirectory string) (string, string, error) {
+func ReadAndGenerateDataSourcesAndResources(graphqlQuery string, providerDirectory string, sdkDir string) (string, string, error) {
 
 	parsedQuery, err := parseGraphQLQuery(graphqlQuery)
 
@@ -45,26 +48,31 @@ func ReadAndGenerateDataSourcesAndResources(graphqlQuery string, providerDirecto
 	}
 
 	if parsedQuery.ResourceType == DataSource {
-		code, err := generateTerraformDataSource(parsedQuery)
+		q, err := queryir.Parse(graphqlQuery)
 		if err != nil {
-			fmt.Println("Error generating Terraform data source:", err)
+			fmt.Println("Error parsing GraphQL query:", err)
 			os.Exit(1)
 		}
-		file, err := os.Create(fmt.Sprintf("%s/%s_data_source.go", providerDirectory, parsedQuery.QueryName))
+		res, err := sdkintrospect.Load(sdkDir, q)
 		if err != nil {
-			fmt.Println("Error creating the file:", err)
+			fmt.Println("Error introspecting SDK:", err)
+			os.Exit(1)
+		}
+		code, err := emit.DataSource(res)
+		if err != nil {
+			fmt.Println("Error emitting data source:", err)
+			os.Exit(1)
+		}
+		file, err := os.Create(fmt.Sprintf("%s/%s_data_source.go", providerDirectory, q.BaseName))
+		if err != nil {
 			return "", "", err
 		}
 		defer file.Close()
-
-		_, err = file.WriteString(code)
-		if err != nil {
-			fmt.Println("Error writing to the file:", err)
+		if _, err = file.WriteString(code); err != nil {
 			return "", "", err
 		}
-
-		fmt.Printf("Content written to %s_data_source.go file successfully!\n", parsedQuery.QueryName)
-		return parsedQuery.QueryName, "", nil
+		fmt.Printf("Content written to %s_data_source.go file successfully!\n", q.BaseName)
+		return q.BaseName, "", nil
 	} else if parsedQuery.ResourceType == Resource {
 		code, err := generateTerraformResource(parsedQuery)
 		if err != nil {
@@ -106,35 +114,6 @@ func generateTerraformProvider(components TerraformComponents) (string, error) {
 
 	var buf bytes.Buffer
 	err = providerTemplate.Execute(&buf, data)
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-func generateTerraformDataSource(parsedQuery *InputGraphQLQuery) (string, error) {
-	structName := parsedQuery.QueryName + "DataSource"
-	data := DataSourceTemplateData{
-		QueryName:       parsedQuery.QueryName,
-		ObjectName:      parsedQuery.ObjectName,
-		Required:        parsedQuery.Required,
-		StructName:      structName,
-		Fields:          parsedQuery.Fields,
-		GenqlientFields: parsedQuery.GenqlientFields,
-	}
-
-	// Render the template
-	caser := cases.Title(language.English)
-	datasourceTemplate, err := template.New("datasource").Funcs(template.FuncMap{
-		"title": caser.String,
-	}).Parse(string(templates.DatasourceTemplateContent))
-	if err != nil {
-		return "", err
-	}
-
-	var buf bytes.Buffer
-	err = datasourceTemplate.Execute(&buf, data)
 	if err != nil {
 		return "", err
 	}

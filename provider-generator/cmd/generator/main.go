@@ -13,6 +13,7 @@ func main() {
 	graphqlDirectory := flag.String("gql-dir", "gql", "Directory with GraphQL queries")
 	providerDirectory := flag.String("provider-dir", "internal/provider", "Directory to write the generated Terraform Provider")
 	artifactDataSource := flag.Bool("artifacts", false, "Set flag to be able to query artifacts")
+	sdkDir := flag.String("sdk-dir", "sdk", "Directory of the genqlient-generated SDK module")
 
 	flag.Parse()
 
@@ -31,7 +32,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				dataSourceName, resourceName, err := parser.ReadAndGenerateDataSourcesAndResources(string(data), *providerDirectory)
+				dataSourceName, resourceName, err := parser.ReadAndGenerateDataSourcesAndResources(string(data), *providerDirectory, *sdkDir)
 				if err == nil {
 					if dataSourceName != "" {
 						dataSources = append(dataSources, dataSourceName)
