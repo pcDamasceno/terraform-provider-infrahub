@@ -17,8 +17,8 @@ const (
 )
 
 type Node struct {
-	GqlField string  // graphql field name on its parent ("source_address", "name", "action")
-	TFName   string  // terraform attribute name (defaults to GqlField)
+	GqlField string // graphql field name on its parent ("source_address", "name", "action")
+	TFName   string // terraform attribute name (defaults to GqlField)
 	Kind     Kind
 	Children []*Node // Object/List members
 	Variants []*Variant
