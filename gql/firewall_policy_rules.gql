@@ -1,0 +1,48 @@
+query FirewallPolicyRules($policy: String!) {
+  SecurityPolicyRule(policy__name__value: $policy) {
+    edges {
+      node {
+        name { value }
+        index { value }
+        action { value }
+        log { value }
+        source_zone { node { name { value } } }
+        destination_zone { node { name { value } } }
+        source_address {
+          edges {
+            node {
+              __typename
+              ... on SecurityIPAddress { name { value } address { value } }
+              ... on SecurityPrefix { name { value } prefix { value } }
+            }
+          }
+        }
+        destination_address {
+          edges {
+            node {
+              __typename
+              ... on SecurityIPAddress { name { value } address { value } }
+              ... on SecurityPrefix { name { value } prefix { value } }
+            }
+          }
+        }
+        source_services {
+          edges {
+            node {
+              __typename
+              ... on SecurityService { name { value } port { value } }
+            }
+          }
+        }
+        destination_services {
+          edges {
+            node {
+              __typename
+              ... on SecurityService { name { value } port { value } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
