@@ -23,6 +23,7 @@ type RNode struct {
 	GoField  string   // Go struct field name on the parent for this selection
 	TFType   string   // for Scalar: "types.String"|"types.Int64"|"types.Bool"|"types.Float64"
 	Access   string   // for Scalar: accessor suffix from the object value, e.g. ".Value"
+	Unwrap   string   // for Object: ".Node" when the SDK struct wraps children behind a node field, else ""
 	Children []*RNode // Object/List members
 	Variants []*RVariant
 }
@@ -89,7 +90,10 @@ func (c *pkgCtx) resolveNode(n *queryir.Node, goField string, goType types.Type)
 		return r, nil
 
 	case queryir.Object:
-		elem := c.unwrapToStruct(goType)
+		elem, unwrapped := c.unwrapToStruct(goType)
+		if unwrapped {
+			r.Unwrap = ".Node"
+		}
 		for _, child := range n.Children {
 			gf, gt, ok := c.fieldByJSONOrName(elem, child.GqlField)
 			if !ok {
@@ -195,14 +199,17 @@ func tfTypeForGo(t types.Type) string {
 	}
 }
 
-func (c *pkgCtx) unwrapToStruct(t types.Type) *types.Struct {
+// unwrapToStruct returns the struct holding the selected children. When the
+// SDK type wraps them behind a `node` field, it follows that field and reports
+// unwrapped=true so the emitter can add the matching `.Node` access hop.
+func (c *pkgCtx) unwrapToStruct(t types.Type) (*types.Struct, bool) {
 	st := t.Underlying().(*types.Struct)
 	for i := 0; i < st.NumFields(); i++ {
 		if strings.EqualFold(st.Field(i).Name(), "node") {
-			return st.Field(i).Type().Underlying().(*types.Struct)
+			return st.Field(i).Type().Underlying().(*types.Struct), true
 		}
 	}
-	return st
+	return st, false
 }
 
 func (c *pkgCtx) edgesNodeStruct(t types.Type) *types.Struct {
