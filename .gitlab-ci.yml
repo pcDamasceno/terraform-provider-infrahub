@@ -1,0 +1,18 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  INFRAHUB_SERVER: "https://infrahub.autonetops.com"
+
+format:
+  stage: build
+  image: <image>
+  script:
+    - go fmt ./...
+
+install-releaser:
+  stage: build
+  image: <image>
+  script:
+    - go install github.com/goreleaser/goreleaser/v2@latest
