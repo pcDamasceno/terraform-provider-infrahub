@@ -1,13 +1,13 @@
 module terraform-provider-infrahub
 
-go 1.23.3
+go 1.24.0
 
 replace github.com/opsmill/infrahub-sdk-go => ./sdk
 
 require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
-	github.com/hashicorp/terraform-plugin-log v0.9.0
+	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/opsmill/infrahub-sdk-go v0.0.0-00010101000000-000000000000
 )
 
